@@ -1,0 +1,19 @@
+# build output
+/bin/
+/dist/
+
+# local cache
+*.db
+*.db-wal
+*.db-shm
+
+# credentials — these belong in ~/.config/commhub, never in the repo
+google_client.json
+client_secret*.json
+secrets.sealed
+config.toml
+
+# planning docs, kept local
+SPEC.md
+SPEC-v2-slack-first.md
+SECURITY.md
