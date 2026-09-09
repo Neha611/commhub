@@ -239,6 +239,26 @@ func openBrowser(u string) error {
 }
 
 func fail(err error) int {
+	var denied *google.DeniedError
+	if errors.As(err, &denied) {
+		fmt.Fprintf(os.Stderr, "\ncommhub: %v\n\n", denied)
+		fmt.Fprintln(os.Stderr, "This almost always means the consent screen is still in \"Testing\", which")
+		fmt.Fprintln(os.Stderr, "only lets accounts you have listed as test users sign in.")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "  Fix it at https://console.cloud.google.com/auth/audience")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "    Publishing status → Publish app        (preferred: tokens do not expire)")
+		fmt.Fprintln(os.Stderr, "    or Test users → + Add users → your own address")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Publishing shows a \"Google hasn't verified this app\" warning when you")
+		fmt.Fprintln(os.Stderr, "authorise. That is expected: the app is yours and you are its only user.")
+		fmt.Fprintln(os.Stderr, "Choose Advanced, then continue.")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Adding yourself as a test user works immediately, but Google revokes")
+		fmt.Fprintln(os.Stderr, "refresh tokens after seven days in that state, so you would reconnect")
+		fmt.Fprintln(os.Stderr, "every week.")
+		return 1
+	}
 	var apiErr *google.APIError
 	if errors.As(err, &apiErr) && apiErr.NeedsReauth() {
 		fmt.Fprintln(os.Stderr, "commhub: Google refused the credential.")

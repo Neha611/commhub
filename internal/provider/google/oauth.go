@@ -88,8 +88,8 @@ func Authorize(ctx context.Context, c ClientFile, scopes []string, incremental b
 				return
 			}
 			if e := q.Get("error"); e != "" {
-				writePage(w, "Authorisation refused", "You can close this tab and try again.")
-				done <- result{err: fmt.Errorf("Google returned %q", e)}
+				writePage(w, "Authorisation refused", "You can close this tab and return to the terminal.")
+				done <- result{err: &DeniedError{Reason: e}}
 				return
 			}
 			code := q.Get("code")
@@ -129,6 +129,18 @@ func Authorize(ctx context.Context, c ClientFile, scopes []string, incremental b
 	case <-time.After(5 * time.Minute):
 		return safe.Secret{}, errors.New("timed out waiting for the browser")
 	}
+}
+
+// DeniedError is Google refusing the authorisation. It is separated out
+// because the overwhelmingly common cause on a first run is a consent screen
+// left in Testing, which produces a bare "access_denied" that explains nothing.
+type DeniedError struct{ Reason string }
+
+func (e *DeniedError) Error() string {
+	if e.Reason == "access_denied" {
+		return "Google refused the authorisation (access_denied)"
+	}
+	return "Google returned " + e.Reason
 }
 
 // Revoke tells Google to invalidate the token. disconnect calls this before
