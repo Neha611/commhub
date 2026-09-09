@@ -47,7 +47,13 @@ func Command(ctx context.Context, name string, args ...string) *exec.Cmd {
 // OpenURL validates a URL and hands it to the platform opener as a distinct
 // argv element — never through a shell, so no quoting bug can become command
 // injection.
-func OpenURL(ctx context.Context, raw string) error {
+//
+// The opener deliberately takes no context. It forks, hands the URL to the
+// desktop and exits; binding its lifetime to a context that the caller cancels
+// on return kills it before the browser ever sees the URL. Start() has already
+// returned nil by then, so the failure is silent and the user simply waits for
+// a tab that never appears.
+func OpenURL(raw string) error {
 	clean, err := CheckURL(raw)
 	if err != nil {
 		return err
@@ -62,6 +68,18 @@ func OpenURL(ctx context.Context, raw string) error {
 	default:
 		name = "xdg-open"
 	}
-	args = append(args, clean)
-	return Command(ctx, name, args...).Start()
+	return startDetached(name, append(args, clean)...)
+}
+
+// startDetached runs a command with a scrubbed environment and does not wait
+// for it, while still reaping it so it cannot become a zombie. Its lifetime is
+// independent of the caller's.
+func startDetached(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	cmd.Env = MinimalEnv()
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go func() { _ = cmd.Wait() }()
+	return nil
 }

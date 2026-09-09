@@ -3,8 +3,10 @@ package safe
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestMinimalEnvDropsSecrets(t *testing.T) {
@@ -51,7 +53,32 @@ func TestCommandScrubsEnvironment(t *testing.T) {
 }
 
 func TestOpenURLRefusesUnsafeSchemes(t *testing.T) {
-	if err := OpenURL(context.Background(), "file:///etc/passwd"); err == nil {
+	if err := OpenURL("file:///etc/passwd"); err == nil {
 		t.Fatal("OpenURL executed a file:// URL")
 	}
+}
+
+func TestStartDetachedOutlivesItsCaller(t *testing.T) {
+	// Regression: the opener used to be built with exec.CommandContext, and the
+	// caller cancelled that context on return. xdg-open was killed a moment
+	// after Start(), before it could hand the URL to a browser — and Start()
+	// had already returned nil, so nothing reported a failure and the user
+	// waited for a tab that never came.
+	marker := filepath.Join(t.TempDir(), "opened")
+
+	func() {
+		// A caller whose scope ends immediately, as openBrowser's did.
+		if err := startDetached("sh", "-c", "sleep 0.4; touch "+marker); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if _, err := os.Stat(marker); err == nil {
+			return // survived
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	t.Fatal("the detached process was killed before it finished its work")
 }

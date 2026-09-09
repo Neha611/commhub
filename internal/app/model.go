@@ -566,9 +566,7 @@ func stripComments(s string) string {
 
 func openCmd(url string) tea.Cmd {
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := safe.OpenURL(ctx, url); err != nil {
+		if err := safe.OpenURL(url); err != nil {
 			return statusMsg("could not open: " + err.Error())
 		}
 		return statusMsg("opened " + safe.DisplayHost(url))
