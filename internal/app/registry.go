@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/Neha611/commhub/internal/adapter"
 	"github.com/Neha611/commhub/internal/adapter/calendar"
@@ -11,6 +13,10 @@ import (
 	"github.com/Neha611/commhub/internal/provider/google"
 	"github.com/Neha611/commhub/internal/secrets"
 )
+
+// DevMode reports whether synthetic fixtures may be loaded. It is off unless
+// explicitly requested, so no ordinary run can display invented data.
+func DevMode() bool { return os.Getenv("COMMHUB_DEV") == "1" }
 
 // Build constructs one adapter per (provider, service) pair that is actually
 // configured and enabled. Nothing is instantiated for a service the user has
@@ -23,6 +29,16 @@ func Build(ctx context.Context, cfg config.Config, be secrets.Backend) (ads []ad
 	for _, p := range cfg.Providers {
 		switch p.Kind {
 		case "fake":
+			// Synthetic data is a development and CI fixture, never a product
+			// feature. Left reachable in normal runs it is indistinguishable
+			// from real mail at a glance, which is exactly the wrong property
+			// for a tool people use to decide what needs answering.
+			if !DevMode() {
+				errs = append(errs, fmt.Errorf(
+					"provider %q holds synthetic data and is ignored; remove it with `commhub disconnect %s`",
+					p.ID, p.ID))
+				continue
+			}
 			ads = append(ads, fake.NewMail(), fake.NewCalendar())
 
 		case "google":

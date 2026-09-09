@@ -45,6 +45,7 @@ func TestGoldenDashboard(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Setenv("COMMHUB_DEV", "1")
 	ads, _ := Build(ctx, cfg, nil)
 	m := New(st, cfg, ads, nil)
 	m.width, m.height = 132, 30

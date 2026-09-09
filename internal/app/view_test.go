@@ -26,6 +26,7 @@ func seeded(t *testing.T) Model {
 
 	cfg := config.Defaults()
 	cfg.Upsert(config.Provider{ID: fake.ProviderID, Kind: "fake", Label: "demo"})
+	t.Setenv("COMMHUB_DEV", "1")
 	ads, _ := Build(context.Background(), cfg, nil)
 	ctx := context.Background()
 	for _, a := range ads {
@@ -102,13 +103,38 @@ func TestWelcomeScreenWhenNothingConnected(t *testing.T) {
 		t.Fatal("a fresh install should open on the welcome screen")
 	}
 	out := m.View()
-	for _, want := range []string{"CommHub", "Connect a service", "Google", "Sample data"} {
+	for _, want := range []string{"CommHub", "Connect a service", "Google"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("welcome screen is missing %q:\n%s", want, out)
 		}
 	}
 	if strings.Contains(out, "Priority") {
 		t.Fatal("an unconfigured install rendered panes")
+	}
+	// Synthetic data must not be offered anywhere a user could reach it.
+	if strings.Contains(out, "Sample data") || strings.Contains(out, "Invented") {
+		t.Fatalf("the welcome screen offers synthetic data:\n%s", out)
+	}
+}
+
+func TestFakeProviderIsIgnoredOutsideDevMode(t *testing.T) {
+	// A config left over from an older build must not resurrect fake data.
+	cfg := config.Defaults()
+	cfg.Upsert(config.Provider{ID: fake.ProviderID, Kind: "fake", Label: "demo"})
+
+	t.Setenv("COMMHUB_DEV", "")
+	ads, errs := Build(context.Background(), cfg, nil)
+	if len(ads) != 0 {
+		t.Fatalf("fake provider produced %d adapters in a normal run", len(ads))
+	}
+	if len(errs) == 0 {
+		t.Fatal("ignoring a configured provider must be reported, not silent")
+	}
+
+	t.Setenv("COMMHUB_DEV", "1")
+	ads, _ = Build(context.Background(), cfg, nil)
+	if len(ads) == 0 {
+		t.Fatal("COMMHUB_DEV=1 should still load fixtures for development")
 	}
 }
 

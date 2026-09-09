@@ -37,15 +37,6 @@ by Google after seven days. You will see an "unverified app" warning when
 authorising; that is expected, because the app is yours and you are its only
 user.
 
-Want to see the interface before setting any of that up?
-
-```bash
-./bin/commhub connect fake     # invented sample data, no credentials, no network
-./bin/commhub disconnect fake:demo
-```
-
-Nothing in that mode is real — the footer says so while it is active.
-
 ### Second account
 
 ```bash
@@ -148,8 +139,10 @@ Releases are cut by pushing a tag: `git tag v0.1.0 && git push origin v0.1.0`.
 CI runs the tests, checks the licence file is current, builds all six targets,
 publishes the release and attaches a build attestation.
 
-The synthetic adapter means the entire interface is testable with no
-credentials, no network, and no fixtures to maintain.
+A synthetic adapter makes the entire interface testable with no credentials and
+no network. It is a fixture, not a feature: it is never offered in the interface
+and is only loaded when `COMMHUB_DEV=1` is set, so no ordinary run can display
+invented data.
 
 ## License
 

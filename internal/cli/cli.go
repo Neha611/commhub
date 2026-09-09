@@ -58,7 +58,6 @@ func usage() {
   commhub connect google      connect Gmail, Calendar and Meet in one step
   commhub connect google --label work
                               a second, fully independent account
-  commhub connect fake        load synthetic data to try the interface
   commhub status              what is connected, and exactly which scopes are held
   commhub enable <feature>    grant one more capability (bodies, markread, reply, rsvp)
   commhub disable <feature>   drop it again, and revoke the scope
@@ -113,6 +112,11 @@ func connect(args []string) int {
 	}
 	switch args[0] {
 	case "fake":
+		if !app.DevMode() {
+			fmt.Fprintln(os.Stderr, "commhub: `fake` loads synthetic development data, not real mail.")
+			fmt.Fprintln(os.Stderr, "  It is not part of normal use. Set COMMHUB_DEV=1 if you are working on CommHub.")
+			return 2
+		}
 		return connectFake()
 	case "google":
 		return connectGoogle(args[1:])

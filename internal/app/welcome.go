@@ -33,12 +33,6 @@ func integrations() []integration {
 			available: true,
 		},
 		{
-			key: "fake", name: "Sample data",
-			detail:    "Invented items, to see how it works before signing in to anything",
-			args:      []string{"connect", "fake"},
-			available: true,
-		},
-		{
 			key: "slack", name: "Slack",
 			detail:    "Planned for a later release",
 			available: false,
