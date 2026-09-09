@@ -186,6 +186,12 @@ func (m Model) footer() string {
 }
 
 func (m Model) statusLine() string {
+	if m.needsReauth {
+		return ui.Footer.Width(m.width).Render(
+			ui.Urgent.Render("Google sign-in expired") +
+				ui.Meta.Render(" — press ") + ui.KeyCap.Render("A") +
+				ui.Meta.Render(" then Google to reconnect (about five seconds; your data is kept)"))
+	}
 	if m.mode == modeConfirmOpen {
 		return ui.Footer.Width(m.width).Render(
 			ui.Warn.Render("Open ") + ui.Heading.Render(safe.DisplayHost(m.confirmURL)) +

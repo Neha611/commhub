@@ -7,13 +7,16 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Neha611/commhub/internal/adapter"
 	"github.com/Neha611/commhub/internal/config"
+	"github.com/Neha611/commhub/internal/provider/google"
 	"github.com/Neha611/commhub/internal/safe"
 	"github.com/Neha611/commhub/internal/secrets"
 	"github.com/Neha611/commhub/internal/store"
@@ -61,6 +64,7 @@ type Model struct {
 	confirmURL  string
 
 	demo          bool
+	needsReauth   bool
 	optCursor     int
 	be            secrets.Backend
 	width, height int
@@ -277,7 +281,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case syncedMsg:
 		if msg.err != nil {
-			m.flash("sync: " + msg.err.Error())
+			// Google revokes refresh tokens after seven days while a project is
+			// in "Testing", which is where most self-hosted setups live. That
+			// is a one-command fix, so it must not read like a failure.
+			if isExpiredCredential(msg.err) {
+				m.needsReauth = true
+			} else {
+				m.flash("sync: " + msg.err.Error())
+			}
 		}
 		return m, m.load()
 
@@ -291,6 +302,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case reloadedMsg:
 		m.cfg = msg.cfg
 		m.ads = msg.ads
+		m.needsReauth = false
 		m.rebuildPanes()
 		if len(msg.errs) > 0 {
 			m.flash(msg.errs[0].Error())
@@ -571,6 +583,22 @@ func openCmd(url string) tea.Cmd {
 		}
 		return statusMsg("opened " + safe.DisplayHost(url))
 	}
+}
+
+// isExpiredCredential reports whether an error means "sign in again" rather
+// than "something went wrong".
+func isExpiredCredential(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	for _, s := range []string{"invalid_grant", "token expired", "no stored credential"} {
+		if strings.Contains(msg, s) {
+			return true
+		}
+	}
+	var apiErr *google.APIError
+	return errors.As(err, &apiErr) && apiErr.NeedsReauth()
 }
 
 func max(a, b int) int {

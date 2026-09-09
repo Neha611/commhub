@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -248,5 +249,35 @@ func TestFeatureScopesStayMinimal(t *testing.T) {
 		if f == adapter.FeatureReply || f == adapter.FeatureMarkRead || f == adapter.FeatureMailBodies {
 			t.Fatalf("%s must not be on by default", f)
 		}
+	}
+}
+
+func TestExpiredCredentialIsExplainedNotDumped(t *testing.T) {
+	// A seven-day token expiry is the normal state of a self-hosted setup in
+	// Google's "Testing" mode. It must read as a one-key fix, not a failure.
+	m := seeded(t)
+	u, _ := m.Update(syncedMsg{err: errors.New(`oauth2: "invalid_grant" token expired`)})
+	got := u.(Model)
+	if !got.needsReauth {
+		t.Fatal("an expired credential was not recognised")
+	}
+	out := got.View()
+	if !strings.Contains(out, "expired") || !strings.Contains(out, "reconnect") {
+		t.Fatalf("the expiry is not explained to the user:\n%s", out)
+	}
+	if strings.Contains(out, "invalid_grant") {
+		t.Fatal("the raw OAuth error was shown to the user")
+	}
+}
+
+func TestOrdinarySyncErrorsAreStillReported(t *testing.T) {
+	m := seeded(t)
+	u, _ := m.Update(syncedMsg{err: errors.New("connection refused")})
+	got := u.(Model)
+	if got.needsReauth {
+		t.Fatal("a network error was misreported as an expired sign-in")
+	}
+	if !strings.Contains(got.status, "connection refused") {
+		t.Fatalf("a real error was swallowed, status = %q", got.status)
 	}
 }
