@@ -26,6 +26,20 @@ func TestMinimalEnvDropsSecrets(t *testing.T) {
 	}
 }
 
+func TestMinimalEnvKeepsDesktopIntegration(t *testing.T) {
+	// Scrubbing must not break the browser opener: without these, xdg-open
+	// falls back to a generic handler and the OAuth flow can silently fail to
+	// surface a tab.
+	t.Setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus")
+	t.Setenv("XDG_CURRENT_DESKTOP", "GNOME")
+	joined := strings.Join(MinimalEnv(), "\n")
+	for _, want := range []string{"DBUS_SESSION_BUS_ADDRESS=", "XDG_CURRENT_DESKTOP="} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("MinimalEnv dropped %s, breaking the desktop handler", want)
+		}
+	}
+}
+
 func TestCommandScrubsEnvironment(t *testing.T) {
 	t.Setenv("COMMHUB_SECRET_X", "nope")
 	cmd := Command(context.Background(), "true")

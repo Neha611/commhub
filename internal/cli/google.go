@@ -226,7 +226,15 @@ func reauthorize(ctx context.Context, cfg *config.Config, p *config.Provider, ad
 	return config.Save(*cfg)
 }
 
+// openBrowser prints the authorisation URL and then tries to open it.
+//
+// Printing is not a fallback for failure: xdg-open reports success as soon as
+// it hands off, so a tab that opens behind the terminal, or in a browser the
+// user is not watching, looks identical to one that never opened. The URL is
+// always on screen so the flow can be completed either way.
 func openBrowser(u string) error {
+	fmt.Printf("\nIf a browser tab does not appear, open this URL:\n\n  %s\n\n", u)
+	fmt.Println("Waiting for you to approve… (ctrl-c to cancel)")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	return safe.OpenURL(ctx, u)

@@ -17,6 +17,12 @@ var envAllow = []string{
 	"PATH", "HOME", "TERM", "LANG", "LC_ALL", "LC_CTYPE",
 	"DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR", "XDG_SESSION_TYPE",
 	"TMPDIR", "USER", "SHELL",
+	// Needed by xdg-open to reach the desktop's real handler rather than a
+	// generic fallback, and by $EDITOR for terminal integration. None of these
+	// is a credential — scrubbing exists to withhold secrets, not to break the
+	// desktop.
+	"DBUS_SESSION_BUS_ADDRESS", "XDG_CURRENT_DESKTOP", "XDG_DATA_DIRS",
+	"XDG_CONFIG_DIRS", "BROWSER", "COLORTERM",
 }
 
 // MinimalEnv builds the scrubbed environment for child processes.
