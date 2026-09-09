@@ -179,7 +179,8 @@ func (m Model) footer() string {
 		left = ui.Meta.Render("No upcoming meetings")
 	}
 	if m.demo {
-		left += ui.Warn.Render("      demo data — not your real accounts")
+		left += ui.Warn.Render("      demo data — press ") +
+			ui.KeyCap.Render("A") + ui.Warn.Render(" to connect a real account")
 	}
 	return ui.Footer.Width(m.width).Render(left)
 }
@@ -207,6 +208,7 @@ func (m Model) statusLine() string {
 		ui.KeyCap.Render("enter") + " open", ui.KeyCap.Render("J") + " join",
 		ui.KeyCap.Render("r") + " reply",
 		ui.KeyCap.Render("m") + " read", ui.KeyCap.Render("/") + " search",
+		ui.KeyCap.Render("A") + " add account",
 		ui.KeyCap.Render("?") + " help", ui.KeyCap.Render("q") + " quit",
 	}
 	return ui.Footer.Width(m.width).Render(ui.Meta.Render(strings.Join(hints, "  ")))
