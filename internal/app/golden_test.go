@@ -20,6 +20,15 @@ func updateGolden() bool { return os.Getenv("UPDATE_GOLDEN") == "1" }
 var fixedNow = time.Date(2026, 9, 7, 9, 18, 0, 0, time.UTC)
 
 func TestGoldenDashboard(t *testing.T) {
+	// Times reach the pane through the store, and time.Unix returns them in the
+	// local zone — correct for users, who want their own clock, but it makes a
+	// rendered snapshot depend on where it was generated. Pin the zone so the
+	// golden file means the same thing on a laptop in IST and on a CI runner in
+	// UTC.
+	origLocal := time.Local
+	time.Local = time.UTC
+	t.Cleanup(func() { time.Local = origLocal })
+
 	st, err := store.Open(filepath.Join(t.TempDir(), "t.db"))
 	if err != nil {
 		t.Fatal(err)
