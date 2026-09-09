@@ -128,7 +128,15 @@ func tick() tea.Cmd {
 // load reads the store off the render path and returns everything the panes
 // need in one message.
 func (m Model) load() tea.Cmd {
-	st, cfg, panes, search := m.st, m.cfg, m.panes, m.search
+	st, cfg, search := m.st, m.cfg, m.search
+	// Copy out just the pane identifiers, on this goroutine. Capturing m.panes
+	// itself would have the background goroutine range over the same backing
+	// array the update loop writes items into — a data race the tests cannot
+	// reach, because they drive load() synchronously.
+	ids := make([]paneID, 0, len(m.panes))
+	for _, p := range m.panes {
+		ids = append(ids, p.id)
+	}
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -149,17 +157,17 @@ func (m Model) load() tea.Cmd {
 			return out
 		}
 		out.priority = items
-		for _, p := range panes {
-			if p.id == panePriority {
+		for _, id := range ids {
+			if id == panePriority {
 				continue
 			}
 			var sub []store.Ranked
 			for _, it := range items {
-				if it.Service == string(p.id) {
+				if it.Service == string(id) {
 					sub = append(sub, it)
 				}
 			}
-			out.byPane[p.id] = sub
+			out.byPane[id] = sub
 		}
 		out.next, _ = st.NextMeeting(ctx)
 		out.counts, _ = st.Counts(ctx)
