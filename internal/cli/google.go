@@ -32,22 +32,26 @@ It is a five-minute setup, once.
      https://console.cloud.google.com/apis/library/gmail.googleapis.com
      https://console.cloud.google.com/apis/library/calendar-json.googleapis.com
 
-  3. Configure the OAuth consent screen
-     https://console.cloud.google.com/apis/credentials/consent
-       · User type: External
-       · Fill in the required name and email fields
-       · PUBLISH IT — set the status to "In production"
+  3. Configure the consent screen
+     https://console.cloud.google.com/auth/branding
+       · App name, and your own address for both support and developer contact
+       · Do not upload a logo — that forces app verification
 
-     This step matters. A consent screen left in "Testing" has its refresh
-     tokens revoked by Google after seven days, and CommHub would ask you to
-     sign in again every week. You will see an "unverified app" warning when
-     you authorise; that is expected, because the app is yours and you are its
-     only user.
+  4. Add yourself as a test user
+     https://console.cloud.google.com/auth/audience
+       · Test users → Add users → the address you will sign in with
 
-  4. Create credentials → OAuth client ID → Application type: "Desktop app"
+     Google revokes refresh tokens after seven days while an app is in
+     "Testing", so you will reconnect about weekly. Switching to production
+     avoids that, but Google requires a homepage URL and a privacy policy URL
+     on a domain you can verify — which most people setting this up for
+     themselves will not have. If you do, publish on the Audience page and
+     the weekly reconnect goes away.
+
+  5. Create credentials → OAuth client ID → Application type: "Desktop app"
      https://console.cloud.google.com/apis/credentials
 
-  5. Download the JSON and save it as
+  6. Download the JSON and save it as
      %s
 
 CommHub will then ask Google for exactly two read-only scopes:

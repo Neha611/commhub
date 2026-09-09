@@ -31,11 +31,17 @@ go build -o bin/commhub ./cmd/commhub
 — a one-time, five-minute setup — then opens your browser to authorise. It
 requests two read-only scopes and nothing else.
 
-**Publish your consent screen.** The wizard says so too, but it is the step
-people skip: a consent screen left in "Testing" has its refresh tokens revoked
-by Google after seven days. You will see an "unverified app" warning when
-authorising; that is expected, because the app is yours and you are its only
-user.
+**Expect to reconnect weekly, unless you own a domain.** Google revokes refresh
+tokens after seven days while a project sits in "Testing", and the only way out
+is switching the app to production — which requires a homepage URL and a privacy
+policy URL on a domain you can verify in Search Console. Most people setting
+CommHub up for themselves will not have one, so the wizard sets you up as a test
+user of your own project and you re-run `commhub connect google` about once a
+week.
+
+If you do have a domain, publish on the Audience page and the reconnect goes
+away. You will see an "unverified app" warning when authorising either way; that
+is expected, because the app is yours and you are its only user.
 
 ### Second account
 
