@@ -147,4 +147,4 @@ credentials, no network, and no fixtures to maintain.
 
 ## License
 
-Not yet chosen — see SPEC §17. Pick before the first release.
+[MIT](LICENSE) — © 2026 Neha611.
