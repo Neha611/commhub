@@ -7,6 +7,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Byte-order sorting, so the file is identical on a developer's machine and on
+# CI. Without this, locales that collate case-insensitively order the modules
+# differently and the freshness check in the release workflow fails on ordering
+# alone.
+export LC_ALL=C
+
 out=THIRD_PARTY_LICENSES
 mod=$(go list -m)
 
