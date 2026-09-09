@@ -140,7 +140,13 @@ no window in which they are world-readable.
 make check     # go vet + go test
 make fuzz      # fuzz the sanitiser for 60s
 make golden    # regenerate the dashboard snapshot
+make licenses  # regenerate THIRD_PARTY_LICENSES after a dependency change
+make snapshot  # build release archives locally, without publishing
 ```
+
+Releases are cut by pushing a tag: `git tag v0.1.0 && git push origin v0.1.0`.
+CI runs the tests, checks the licence file is current, builds all six targets,
+publishes the release and attaches a build attestation.
 
 The synthetic adapter means the entire interface is testable with no
 credentials, no network, and no fixtures to maintain.

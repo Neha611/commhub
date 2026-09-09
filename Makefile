@@ -7,7 +7,7 @@ VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 # cannot cross-compile.
 export CGO_ENABLED=0
 
-.PHONY: build test vet fuzz lint golden run clean check
+.PHONY: build test vet fuzz lint golden run clean check licenses snapshot
 
 build:
 	$(GO) build -trimpath -ldflags="-s -w -X github.com/Neha611/commhub/internal/cli.Version=$(VERSION)" -o $(BIN) ./cmd/commhub
@@ -30,6 +30,12 @@ check: vet test
 
 run: build
 	./$(BIN)
+
+licenses:
+	./scripts/gen-third-party-licenses.sh
+
+snapshot:
+	goreleaser release --snapshot --clean --skip=publish
 
 clean:
 	rm -rf bin dist

@@ -1,0 +1,95 @@
+version: 2
+project_name: commhub
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: commhub
+    main: ./cmd/commhub
+    binary: commhub
+    # Not an optimisation: cgo would break cross-compilation and the
+    # single-static-binary promise. CI enforces the same setting.
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/Neha611/commhub/internal/cli.Version={{ .Version }}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+
+archives:
+  - id: commhub
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_
+      {{- if eq .Os "darwin" }}macos{{ else }}{{ .Os }}{{ end }}_
+      {{- .Arch }}
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - THIRD_PARTY_LICENSES
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+# Reproducibility: without this every archive carries the build time and no two
+# builds of the same tag are byte-identical.
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  draft: false
+  prerelease: auto
+  header: |
+    ## Install
+
+    ```sh
+    curl -fsSL https://raw.githubusercontent.com/Neha611/commhub/main/install.sh | sh
+    ```
+
+    Or download the archive for your platform below, or `go install
+    github.com/Neha611/commhub/cmd/commhub@{{ .Tag }}`.
+
+    Every archive is covered by a build attestation. Verify what you downloaded
+    actually came from this repository's CI:
+
+    ```sh
+    gh attestation verify commhub_*.tar.gz --repo Neha611/commhub
+    ```
+
+    First run walks you through connecting Google. CommHub asks for two
+    read-only scopes and stores nothing outside your own machine.
+  footer: |
+    ---
+    Checksums are in `checksums.txt`.
+
+# Homebrew needs a separate Neha611/homebrew-tap repository and a personal
+# access token with write access to it, since the default GITHUB_TOKEN cannot
+# push to another repo. Create both, add the token as secret HOMEBREW_TAP_TOKEN,
+# then uncomment.
+#
+# brews:
+#   - repository:
+#       owner: Neha611
+#       name: homebrew-tap
+#       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+#     homepage: https://github.com/Neha611/commhub
+#     description: Terminal dashboard unifying Gmail, Calendar and Meet into one ranked view
+#     license: MIT
+#     test: |
+#       system "#{bin}/commhub", "version"

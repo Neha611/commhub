@@ -17,3 +17,6 @@ config.toml
 SPEC.md
 SPEC-v2-slack-first.md
 SECURITY.md
+
+# goreleaser output
+/dist/

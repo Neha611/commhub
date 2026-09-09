@@ -1,0 +1,49 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write   # create the release
+  id-token: write   # OIDC, for signing the attestation
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }   # goreleaser needs history for the changelog
+
+      - uses: actions/setup-go@v5
+        with: { go-version: stable, check-latest: true }
+
+      # Never publish a tag that does not pass its own tests.
+      - name: test
+        env: { CGO_ENABLED: 1 }
+        run: go test ./... -race
+
+      - name: known vulnerabilities
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+      - name: licences are current
+        run: |
+          ./scripts/gen-third-party-licenses.sh
+          git diff --exit-code THIRD_PARTY_LICENSES \
+            || { echo "::error::THIRD_PARTY_LICENSES is stale — run 'make licenses' and commit"; exit 1; }
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # A checksum proves the file matches the release page; it proves nothing
+      # if the release page is what was tampered with. An attestation ties each
+      # archive to this repository, this workflow and this commit, verifiable
+      # with `gh attestation verify`.
+      - name: attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "dist/*.tar.gz,dist/*.zip,dist/checksums.txt"
